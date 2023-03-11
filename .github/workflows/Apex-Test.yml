@@ -9,13 +9,19 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Install Salesforce CLI
-        uses: forcedotcom/salesforcedx-action@v3
-        with:
-          version: 'latest'
-      - name: Authenticate with Salesforce CLI
-        run: |
-          sfdx force:auth:jwt:grant --clientid ${{ secrets.SFDC_CLIENT_ID }} --jwtkeyfile ./server.key --username ${{ secrets.SFDC_USERNAME }} --setdefaultdevhubusername
-      - name: Run Apex Tests
-        run: sfdx force:apex:test:run --resultformat tap --wait 10
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+    - name: Install Salesforce CLI
+      run: |
+        wget https://developer.salesforce.com/media/salesforce-cli/sfdx-linux-amd64.tar.xz
+        tar xJf sfdx-linux-amd64.tar.xz
+        ./sfdx/install
+      shell: bash
+    - name: Authenticate with Salesforce
+      run: |
+        echo ${{ secrets.SFDC_CLIENT_SECRET }} | base64 -d > server.key
+        sfdx force:auth:jwt:grant --clientid ${{ secrets.SFDC_CONSUMER_KEY }} --jwtkeyfile server.key --username ${{ secrets.SFDC_USERNAME }} --setdefaultdevhubusername
+    - name: Run Apex Tests
+      run: |
+        sfdx force:apex:test:run -l RunLocalTests -w 30
